@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden md:max-w-lg">
+        <!-- Header -->
+        <div class="bg-green-700 p-4 flex items-center">
+            <a href="/chat-list" class="text-white mr-4"><i class="fas fa-arrow-left text-xl"></i></a>
+            <h1 class="text-white text-2xl font-semibold">New Chat</h1>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="p-4 border-b border-gray-200">
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search contacts" class="w-full p-3 pl-10 rounded-lg bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacts List -->
+        <div class="divide-y divide-gray-200" id="ChatList">
+            <!-- Contact Item 1 -->
+            <a href="/chat-window" class="flex items-center p-4 hover:bg-gray-50">
+                <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Charlotte Tan" class="w-12 h-12 rounded-full mr-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800">Charlotte Tan</h3>
+                    <p class="text-gray-600 text-sm">Online</p>
+                </div>
+            </a>
+
+            <!-- Contact Item 2 -->
+            <a href="/chat-window" class="flex items-center p-4 hover:bg-gray-50">
+                <img src="https://randomuser.me/api/portraits/women/2.jpg" alt="Jettana Bether" class="w-12 h-12 rounded-full mr-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800">Jettana Bether</h3>
+                    <p class="text-gray-600 text-sm">Last seen 5:09</p>
+                </div>
+            </a>
+
+            <!-- Contact Item 3 -->
+            <a href="/chat-window" class="flex items-center p-4 hover:bg-gray-50">
+                <img src="https://randomuser.me/api/portraits/men/3.jpg" alt="Julan Herrlison" class="w-12 h-12 rounded-full mr-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800">Julan Herrlison</h3>
+                    <p class="text-gray-600 text-sm">Last seen 2:15</p>
+                </div>
+            </a>
+
+            <!-- Contact Item 4 -->
+            <a href="/chat-window" class="flex items-center p-4 hover:bg-gray-50">
+                <img src="https://randomuser.me/api/portraits/men/4.jpg" alt="Cameron Willzanson" class="w-12 h-12 rounded-full mr-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800">Cameron Willzanson</h3>
+                    <p class="text-gray-600 text-sm">Last seen 1:95</p>
+                </div>
+            </a>
+
+            <!-- Contact Item 5 -->
+            <a href="/chat-window" class="flex items-center p-4 hover:bg-gray-50">
+                <img src="https://randomuser.me/api/portraits/men/5.jpg" alt="Richard Fincker" class="w-12 h-12 rounded-full mr-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800">Richard Fincker</h3>
+                    <p class="text-gray-600 text-sm">Last seen 2:25</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- New Group Button -->
+        <div class="p-4 border-t border-gray-200">
+            <button class="w-full bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 flex items-center justify-center">
+                <i class="fas fa-users mr-2"></i>
+                New Group
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const contactItems = document.querySelectorAll('.divide-y > a');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            contactItems.forEach(item => {
+                const name = item.querySelector('h3').textContent.toLowerCase();
+                const status = item.querySelector('p').textContent.toLowerCase();
+                
+                if (name.includes(searchTerm) || status.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        async function getContacts() {
+            try {
+                const response = await fetch("/api/contacts", {
+                    method: "GET",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': localStorage.getItem('token')
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch contacts');
+                }
+
+                const contacts = await response.json();
+                
+                // Update the contacts list in the UI
+                let contactsList = document.getElementById('ChatList');
+                contactsList.innerHTML = ''; // Clear existing contacts
+
+                contacts.forEach(contact => {
+                    const contactElement = `
+                        <div onclick="startChat('${contact._id}')" class="flex items-center p-4 hover:bg-gray-50 cursor-pointer">
+                            <img src="${contact.profilePicture || 'https://randomuser.me/api/portraits/lego/1.jpg'}" 
+                                 alt="${contact.name}" 
+                                 class="w-12 h-12 rounded-full mr-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-800">${contact.name}</h3>
+                                <p class="text-gray-600 text-sm">
+                                    ${contact.isOnline ? 'Online' : 
+                                      contact.lastSeen ? `Last seen ${formatLastSeen(contact.lastSeen)}` : 
+                                      contact.email || contact.phone}
+                                </p>
+                            </div>
+                            ${!contact.isSaved ? `
+                                <button onclick="event.stopPropagation(); addContact('${contact._id}')" 
+                                        class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                    Add
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                    contactsList.innerHTML += contactElement;
+                });
+            } catch (error) {
+                console.error('Error fetching contacts:', error);
+                alert('Failed to load contacts. Please try again.');
+            }
+        }
+
+        function formatLastSeen(date) {
+            const lastSeen = new Date(date);
+            const now = new Date();
+            const diff = now - lastSeen;
+            
+            // Less than a minute
+            if (diff < 60000) return 'just now';
+            
+            // Less than an hour
+            if (diff < 3600000) {
+                const minutes = Math.floor(diff / 60000);
+                return `${minutes}m ago`;
+            }
+            
+            // Less than a day
+            if (diff < 86400000) {
+                const hours = Math.floor(diff / 3600000);
+                return `${hours}h ago`;
+            }
+            
+            // More than a day
+            return lastSeen.toLocaleDateString();
+        }
+
+        async function addContact(userId) {
+            try {
+                const response = await fetch("/api/contacts", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ userId })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add contact');
+                }
+
+                // Refresh the contacts list
+                getContacts();
+            } catch (error) {
+                console.error('Error adding contact:', error);
+                alert('Failed to add contact. Please try again.');
+            }
+        }
+
+        async function startChat(contactId) {
+            try {
+                const response = await fetch("/api/chats", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        participants: [contactId]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create chat');
+                }
+
+                const chat = await response.json();
+                window.location.href = "/chat-window?chat=" + chat._id;
+            } catch (error) {
+                console.error('Error starting chat:', error);
+                alert('Failed to start chat. Please try again.');
+            }
+        }
+
+        // Call getContacts when the page loads
+        document.addEventListener('DOMContentLoaded', getContacts);
+    </script>
+</body>
+</html> 

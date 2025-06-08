@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Window</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 6px 12px;
+            background: #e9ecef;
+            border-radius: 16px;
+            width: fit-content;
+            margin: 4px 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            position: relative;
+            left: 12px;
+        }
+
+        .typing-indicator::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            bottom: 0;
+            width: 16px;
+            height: 16px;
+            background: #e9ecef;
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #6c757d;
+            border-radius: 50%;
+            animation: bounce 1.3s infinite ease-in-out;
+            opacity: 0.6;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% { 
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+            30% { 
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        /* Add a subtle pulse animation to the entire indicator */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .typing-indicator {
+            animation: pulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans h-screen flex flex-col">
+    <div class="max-w-md mx-auto bg-white shadow-lg flex flex-col h-full w-full">
+        <!-- Header -->
+        <div class="bg-green-700 p-4 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center">
+                <a href="/chat-list" class="text-white mr-4"><i class="fas fa-arrow-left text-xl"></i></a>
+                <img id="chatAvatar" src="" alt="Profile" class="w-10 h-10 rounded-full mr-3">
+                <div>
+                    <h3 id="chatName" class="text-white text-lg font-semibold"></h3>
+                    <span id="chatStatus" class="text-green-200 text-sm"></span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="#" class="text-white text-xl"><i class="fas fa-video"></i></a>
+                <a href="#" class="text-white text-xl"><i class="fas fa-phone-alt"></i></a>
+            </div>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div id="messageContainer" class="flex-1 p-4 overflow-y-auto space-y-4">
+            <!-- Messages will be dynamically added here -->
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- Received Message -->
+                <div class="flex justify-start">
+                    <div class="bg-gray-200 p-3 rounded-lg max-w-xs">
+                        <p class="text-gray-800">How about meeting at 2 PM?</p>
+                        <span class="text-xs text-gray-600 block text-right mt-1">10:13 <i class="fas fa-check-double text-blue-500"></i></span>
+                    </div>
+                </div>
+    
+                <!-- Sent Message -->
+                <div class="flex justify-end">
+                    <div class="bg-green-500 text-white p-3 rounded-lg max-w-xs">
+                        <p>Sure, that works!</p>
+                        <span class="text-xs text-green-200 block text-right mt-1">10:13 <i class="fas fa-check-double"></i></span>
+                    </div>
+                </div>
+    
+                <!-- Received Message with Image -->
+                <div class="flex justify-start">
+                    <div class="bg-gray-200 p-2 rounded-lg max-w-xs">
+                        <img src="https://via.placeholder.com/200x150" alt="Image" class="rounded-lg mb-2">
+                        <div class="flex justify-end items-center space-x-2 mt-1">
+                            <span class="text-xs text-gray-600">10:13</span>
+                            <i class="fas fa-heart text-red-500"></i>
+                            <i class="fas fa-thumbs-up text-yellow-500"></i>
+                            <i class="fas fa-smile text-orange-500"></i>
+                        </div>
+                    </div>
+                </div>
+    
+                <!-- Sent Message -->
+                <div class="flex justify-end">
+                    <div class="bg-green-500 text-white p-3 rounded-lg max-w-xs">
+                        <p>Great</p>
+                        <span class="text-xs text-green-200 block text-right mt-1">10:03 <i class="fas fa-check-double"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="typing-indicator" style="display: none;">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <!-- Message Input Area -->
+        <div class="p-4 bg-white border-t border-gray-200 flex items-center sticky bottom-0 z-10">
+            <button class="text-gray-500 text-xl mr-3"><i class="fas fa-smile"></i></button>
+            <button class="text-gray-500 text-xl mr-3"><i class="fas fa-paperclip"></i></button>
+            <input type="text" id="messageInput" placeholder="Type a message" class="flex-1 p-3 rounded-full bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 pr-12">
+            <button id="sendButton" onclick="sendMessage()" class="bg-green-500 text-white p-3 rounded-full ml-3 focus:outline-none focus:ring-2 focus:ring-green-500">
+                <i class="fas fa-paper-plane text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize socket connection
+        const token = localStorage.getItem('token');
+        
+        const socket = io('http://localhost:3000', {
+            transports: ['websocket'],
+            auth: { token },
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+        });
+
+        let currentChatId = null;
+        let currentUserId = localStorage.getItem('userId');
+
+        // Get chat details and initialize socket
+        async function initializeChat() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                currentChatId = urlParams.get('chat');
+                
+                if (!currentChatId) {
+                    console.error('No chat ID provided');
+                    return;
+                }
+
+                // Get chat details
+                const response = await fetch(`/api/chats/${currentChatId}`, {
+                    headers: {
+                        'x-auth-token': localStorage.getItem('token')
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch chat details');
+                }
+
+                const chatData = await response.json();
+                
+                // Update UI with chat details
+                let userData = chatData.participants.find(user => user._id != currentUserId);
+                console.log(userData);
+                document.getElementById('chatName').textContent = userData.username;
+                document.getElementById('chatAvatar').src = chatData.userData?.avatar || 'https://via.placeholder.com/40';
+                document.getElementById('chatStatus').textContent = chatData.userData?.isOnline ? 'online' : 'offline';
+
+                // Display existing messages
+                displayMessages(chatData.messages);
+
+                // Join chat room
+                socket.emit('join_chat', { 
+                    chatId: currentChatId,
+                    userId: currentUserId
+                });
+
+                // Set up message input handler
+                setupMessageHandlers();
+            } catch (error) {
+                console.error('Error initializing chat:', error);
+            }
+        }
+
+        // Display messages in the chat
+        function displayMessages(messages) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = '';
+            messages.forEach(message => {
+                const messageElement = createMessageElement(message);
+                container.appendChild(messageElement);
+            });
+
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Create message element
+        function createMessageElement(message) {
+            const isCurrentUser = message.sender._id === localStorage.getItem('userId');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="flex ${isCurrentUser ? 'justify-end' : 'justify-start'}">
+                    <div class="${isCurrentUser ? 'bg-green-500 text-white' : 'bg-gray-200'} p-3 rounded-lg max-w-xs">
+                        <p class="text-gray-800">${message.content}</p>
+                        <span class="text-xs ${isCurrentUser ? 'text-green-200' : 'text-gray-600'} block text-right mt-1">
+                            ${new Date(message.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            ${isCurrentUser ? '<i class="fas fa-check-double"></i>' : ''}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            return messageDiv;
+        }
+
+        // Set up message handlers
+        function setupMessageHandlers() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            let typingTimeout = null;
+
+            // Send message on button click
+            sendButton.addEventListener('click', sendMessage);
+
+            // Send message on Enter key
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Handle typing events
+            messageInput.addEventListener("input", () => {
+                socket.emit("typing", {
+                    chatId: currentChatId,
+                    userId: currentUserId,
+                    isTyping: true
+                });
+
+                // Clear existing timeout
+                if (typingTimeout) {
+                    clearTimeout(typingTimeout);
+                }
+
+                // Set new timeout to stop typing indicator after 1 second of no input
+                typingTimeout = setTimeout(() => {
+                    socket.emit("typing", {
+                        chatId: currentChatId,
+                        userId: currentUserId,
+                        isTyping: false
+                    });
+                }, 1000);
+            });
+        }
+
+        // Send message function
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const content = messageInput.value.trim();
+
+            if (!content) return;
+
+            try {
+                const response = await fetch(`/api/chats/${currentChatId}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                }
+
+                messageInput.value = '';
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+
+        // Socket event listeners
+        socket.on('new_message', (message) => {
+            const messageElement = createMessageElement(message);
+            document.getElementById('messageContainer').appendChild(messageElement);
+            document.getElementById('messageContainer').scrollTop = document.getElementById('messageContainer').scrollHeight;
+        });
+
+        socket.on('user_typing', (data) => {
+            console.log(data, currentChatId, currentUserId);
+            if (data.userId !== currentUserId && data.isTyping) {
+                const typingIndicator = document.getElementById('typingIndicator');
+                typingIndicator.style.display = 'flex';
+            } else {
+                const typingIndicator = document.getElementById('typingIndicator');
+                typingIndicator.style.display = 'none';
+            }
+        });
+
+        socket.on('user_stopped_typing', (data) => {
+            if (data.chatId === currentChatId && data.userId !== currentUserId) {
+                `<!-- Received Message -->
+                <div class="flex justify-start">
+                    <div class="bg-gray-200 p-3 rounded-lg max-w-xs">
+                        <p class="text-gray-800">How about meeting at 2 PM?</p>
+                        <span class="text-xs text-gray-600 block text-right mt-1">10:13 <i class="fas fa-check-double text-blue-500"></i></span>
+                    </div>
+                </div>`;
+
+                const typingIndicator = document.getElementById('typingIndicator');
+                typingIndicator.style.display = 'none';
+            }
+        });
+
+        socket.on('user_status_changed', (data) => {
+            // Update user status in header
+            if (data.userId === currentChatId) {
+                const statusElement = document.getElementById('chatStatus');
+                if (data.isOnline) {
+                    statusElement.textContent = 'online';
+                    statusElement.classList.add('text-green-200');
+                    statusElement.classList.remove('text-gray-400');
+                } else {
+                    const lastSeen = new Date(data.lastSeen);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - lastSeen) / (1000 * 60));
+                    
+                    let statusText = 'offline';
+                    if (diffMinutes < 1) {
+                        statusText = 'just now';
+                    } else if (diffMinutes < 60) {
+                        statusText = `last seen ${diffMinutes}m ago`;
+                    } else if (diffMinutes < 1440) { // less than 24 hours
+                        statusText = `last seen ${Math.floor(diffMinutes / 60)}h ago`;
+                    } else {
+                        statusText = `last seen ${Math.floor(diffMinutes / 1440)}d ago`;
+                    }
+                    
+                    statusElement.textContent = statusText;
+                    statusElement.classList.add('text-gray-400');
+                    statusElement.classList.remove('text-green-200');
+                }
+            }
+        });
+
+        socket.on('user_joined', (data) => {
+            console.log('User joined:', data);
+            if (data.userId === currentChatId) {
+                document.getElementById('chatStatus').textContent = 'online';
+                document.getElementById('chatStatus').classList.add('text-green-200');
+                document.getElementById('chatStatus').classList.remove('text-gray-400');
+            }
+        });
+
+        socket.on('user_left', (data) => {
+            console.log('User left:', data);
+            if (data.userId === currentChatId) {
+                const statusElement = document.getElementById('chatStatus');
+                statusElement.textContent = 'last seen just now';
+                statusElement.classList.add('text-gray-400');
+                statusElement.classList.remove('text-green-200');
+            }
+        });
+
+        // Initialize chat when page loads
+        document.addEventListener('DOMContentLoaded', initializeChat);
+    </script>
+</body>
+</html> 

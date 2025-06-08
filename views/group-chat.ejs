@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans h-screen flex flex-col">
+    <div class="max-w-md mx-auto bg-white shadow-lg flex flex-col h-full w-full">
+        <!-- Header -->
+        <div class="bg-green-700 p-4 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center">
+                <a href="/chat-list" class="text-white mr-4"><i class="fas fa-arrow-left text-xl"></i></a>
+                <div>
+                    <h3 class="text-white text-lg font-semibold">Family Group</h3>
+                    <span class="text-green-200 text-sm">4 members, You, Mom, Dad, Sister</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="#" class="text-white text-xl"><i class="fas fa-video"></i></a>
+                <a href="#" class="text-white text-xl"><i class="fas fa-phone-alt"></i></a>
+            </div>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div class="flex-1 p-4 overflow-y-auto space-y-4">
+            <!-- Received Message (Group Member) -->
+            <div class="flex justify-start items-start">
+                <img src="https://randomuser.me/api/portraits/women/4.jpg" alt="Mom" class="w-8 h-8 rounded-full mr-3 mt-1">
+                <div class="bg-gray-200 p-3 rounded-lg max-w-xs">
+                    <span class="text-xs font-semibold text-blue-700">Mom</span>
+                    <p class="text-gray-800">What are we having for dinner tonight?</p>
+                    <span class="text-xs text-gray-600 block text-right mt-1">10:30 AM</span>
+                </div>
+            </div>
+
+            <!-- Sent Message -->
+            <div class="flex justify-end">
+                <div class="bg-green-500 text-white p-3 rounded-lg max-w-xs">
+                    <p>I'm thinking pizza!</p>
+                    <span class="text-xs text-green-200 block text-right mt-1">10:32 AM <i class="fas fa-check-double"></i></span>
+                </div>
+            </div>
+
+            <!-- Received Message (Group Member) with mention -->
+            <div class="flex justify-start items-start">
+                <img src="https://randomuser.me/api/portraits/men/3.jpg" alt="Dad" class="w-8 h-8 rounded-full mr-3 mt-1">
+                <div class="bg-gray-200 p-3 rounded-lg max-w-xs">
+                    <span class="text-xs font-semibold text-purple-700">Dad</span>
+                    <p class="text-gray-800">@You Sounds good to me!</p>
+                    <span class="text-xs text-gray-600 block text-right mt-1">10:35 AM</span>
+                </div>
+            </div>
+
+            <!-- Received Message (Group Member) with inline reply -->
+            <div class="flex justify-start items-start">
+                <img src="https://randomuser.me/api/portraits/women/5.jpg" alt="Sister" class="w-8 h-8 rounded-full mr-3 mt-1">
+                <div class="bg-gray-200 p-3 rounded-lg max-w-xs">
+                    <div class="border-l-4 border-blue-400 pl-2 mb-1">
+                        <span class="text-xs text-blue-700">You: I'm thinking pizza!</span>
+                        <p class="text-gray-800 text-sm">Yay! My favorite.</p>
+                    </div>
+                    <span class="text-xs text-gray-600 block text-right mt-1">10:37 AM</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Input Area -->
+        <div class="p-4 bg-white border-t border-gray-200 flex items-center sticky bottom-0 z-10">
+            <button class="text-gray-500 text-xl mr-3"><i class="fas fa-smile"></i></button>
+            <button class="text-gray-500 text-xl mr-3"><i class="fas fa-paperclip"></i></button>
+            <input type="text" placeholder="Type a message" class="flex-1 p-3 rounded-full bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 pr-12">
+            <button class="bg-green-500 text-white p-3 rounded-full ml-3 focus:outline-none focus:ring-2 focus:ring-green-500">
+                <i class="fas fa-microphone text-xl"></i>
+            </button>
+        </div>
+    </div>
+</body>
+</html> 

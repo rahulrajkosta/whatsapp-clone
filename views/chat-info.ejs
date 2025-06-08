@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Info</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden md:max-w-lg">
+        <!-- Header -->
+        <div class="bg-green-700 p-4 flex items-center">
+            <a href="/chat-window" class="text-white mr-4"><i class="fas fa-arrow-left text-xl"></i></a>
+            <h1 class="text-white text-2xl font-semibold">Contact Info</h1>
+        </div>
+
+        <!-- User Profile Preview -->
+        <div class="p-4 flex flex-col items-center border-b border-gray-200">
+            <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Emma" class="w-24 h-24 rounded-full mb-4 border-4 border-green-500">
+            <h2 class="text-xl font-semibold text-gray-800">Emma</h2>
+            <p class="text-gray-600 text-sm">online</p>
+        </div>
+
+        <!-- Shared Media Gallery (Placeholder) -->
+        <div class="p-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Shared Media</h3>
+            <div class="grid grid-cols-3 gap-2">
+                <img src="https://via.placeholder.com/100" alt="Media 1" class="w-full h-24 object-cover rounded-lg">
+                <img src="https://via.placeholder.com/100" alt="Media 2" class="w-full h-24 object-cover rounded-lg">
+                <img src="https://via.placeholder.com/100" alt="Media 3" class="w-full h-24 object-cover rounded-lg">
+            </div>
+            <a href="#" class="text-green-700 text-sm mt-3 block text-right">View All</a>
+        </div>
+
+        <!-- Mute Notifications Toggle -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200">
+            <div class="flex items-center">
+                <i class="fas fa-bell-slash text-gray-500 text-xl mr-4"></i>
+                <span class="text-lg text-gray-800">Mute Notifications</span>
+            </div>
+            <label for="muteNotificationsToggle" class="flex items-center cursor-pointer">
+                <div class="relative">
+                    <input type="checkbox" id="muteNotificationsToggle" class="hidden">
+                    <div class="toggle-bg bg-gray-300 border-2 border-gray-300 h-6 w-11 rounded-full"></div>
+                    <div class="toggle-circle absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out"></div>
+                </div>
+            </label>
+            <style>
+                input:checked + .toggle-bg {
+                    background-color: #10B981;
+                    border-color: #10B981;
+                }
+                input:checked + .toggle-bg .toggle-circle {
+                    transform: translateX(100%);
+                }
+            </style>
+        </div>
+
+        <!-- Export Chat History -->
+        <div class="p-4">
+            <a href="#" class="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-file-export text-gray-500 text-xl mr-4"></i>
+                    <span class="text-lg text-gray-800">Export Chat History</span>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </div>
+    </div>
+</body>
+</html> 

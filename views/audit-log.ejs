@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden md:max-w-lg">
+        <!-- Header -->
+        <div class="bg-green-700 p-4 flex items-center">
+            <a href="/settings" class="text-white mr-4"><i class="fas fa-arrow-left text-xl"></i></a>
+            <h1 class="text-white text-2xl font-semibold">Audit Log</h1>
+        </div>
+
+        <!-- Audit Log Entries -->
+        <div class="p-4 divide-y divide-gray-200">
+            <!-- Log Entry 1 -->
+            <div class="py-3">
+                <p class="text-gray-800 font-semibold">Message Edited</p>
+                <p class="text-sm text-gray-600">User <span class="font-medium">Emma</span> edited a message in <span class="font-medium">General Chat</span>.</p>
+                <p class="text-xs text-gray-500 mt-1">2023-10-27 14:30:15</p>
+            </div>
+
+            <!-- Log Entry 2 -->
+            <div class="py-3">
+                <p class="text-gray-800 font-semibold">Message Deleted</p>
+                <p class="text-sm text-gray-600">User <span class="font-medium">Daniel</span> deleted a message in <span class="font-medium">Project Discussion</span>.</p>
+                <p class="text-xs text-gray-500 mt-1">2023-10-27 14:28:01</p>
+            </div>
+
+            <!-- Log Entry 3 -->
+            <div class="py-3">
+                <p class="text-gray-800 font-semibold">User Login</p>
+                <p class="text-sm text-gray-600">User <span class="font-medium">Olivia</span> logged in from IP <span class="font-medium">192.168.1.100</span>.</p>
+                <p class="text-xs text-gray-500 mt-1">2023-10-27 14:20:55</p>
+            </div>
+
+            <!-- Log Entry 4 -->
+            <div class="py-3">
+                <p class="text-gray-800 font-semibold">User Logout</p>
+                <p class="text-sm text-gray-600">User <span class="font-medium">Sophia</span> logged out.</p>
+                <p class="text-xs text-gray-500 mt-1">2023-10-27 14:15:30</p>
+            </div>
+
+            <!-- Log Entry 5 -->
+            <div class="py-3">
+                <p class="text-gray-800 font-semibold">New User Registration</p>
+                <p class="text-sm text-gray-600">New user <span class="font-medium">Ethan</span> registered an account.</p>
+                <p class="text-xs text-gray-500 mt-1">2023-10-27 14:10:05</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
