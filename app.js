@@ -20,11 +20,7 @@ connectDB();
 const server = http.createServer(app);
 
 // Allowed origins
-const allowedOrigins = [
-    'https://frontend-tau-six-22.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001'
-];
+const allowedOrigins = ['https://frontend-tau-six-22.vercel.app', 'https://whatsapp-9pcdoxvrh-rahul-raj-kostas-projects.vercel.app'],
 
 // CORS configuration
 const corsOptions = {
@@ -37,12 +33,13 @@ const corsOptions = {
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+    allowedHeaders: ['Content-Type','Authorization','x-auth-token','X-Requested-With'],
     exposedHeaders: ['Authorization', 'x-auth-token'],
     credentials: true
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Socket.IO with CORS
 const io = new Server(server, {
