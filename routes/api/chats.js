@@ -2,11 +2,17 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../../middleware/auth');
 const chatController = require('../../api/chatController');
+const upload = require('../../middleware/upload');
 
 // @route   GET api/chats/:chatId
 // @desc    Get chat details
 // @access  Private
 router.get('/:chatId', auth, chatController.getChat);
+
+// @route   GET api/chats/:chatId/messages
+// @desc    Get chat messages
+// @access  Private
+router.get('/:chatId/messages', auth, chatController.getMessages);
 
 // @route   POST api/chats
 // @desc    Create new chat
@@ -19,6 +25,27 @@ router.get('/', auth, chatController.chatList);
 // @desc    Send message
 // @access  Private
 router.post('/:chatId/messages', auth, chatController.sendMessage);
+
+// @route   POST api/chats/:chatId/attachments
+// @desc    Upload attachment for a chat message
+// @access  Private
+router.post('/:chatId/attachments', auth, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        const fileUrl = `/uploads/${req.file.filename}`;
+        res.json({
+            url: fileUrl,
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
+            mimeType: req.file.mimetype
+        });
+    } catch (error) {
+        console.error('Attachment upload error:', error);
+        res.status(500).json({ message: 'Error uploading attachment' });
+    }
+});
 
 // @route   PUT api/chats/messages/:messageId/read
 // @desc    Mark message as read

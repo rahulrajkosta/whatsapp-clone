@@ -83,7 +83,7 @@ exports.getChat = async (req, res) => {
 exports.sendMessage = async (req, res) => {
     try {
         const { chatId } = req.params;
-        const { content, file } = req.body;
+        const { content, type, mediaMeta, file } = req.body;
         
         if (!content && !file) {
             return res.status(400).json({ message: 'Message content or file is required' });
@@ -104,14 +104,44 @@ exports.sendMessage = async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to send messages in this chat' });
         }
 
-        // Create new message
-        const message = new Message({
+        // Get other participants with full user data
+        const otherParticipants = await User.find({
+            _id: { 
+                $in: chat.participants.filter(p => p.toString() !== req.user.id.toString())
+            }
+        }).select('-password');
+
+        otherParticipants.forEach(user => {
+            
+        })
+        // Create new message (support legacy `file` and new `type`/`mediaMeta`)
+        const messagePayload = {
             chatId,
             sender: req.user.id,
-            content,
-            file: file || null,
-            readBy: [req.user.id] // Mark as read by sender
-        });
+            content: content || '',
+            readBy: [req.user.id]
+        };
+
+        if (type) {
+            messagePayload.type = type;
+        }
+
+        if (mediaMeta) {
+            messagePayload.mediaMeta = mediaMeta;
+        }
+
+        // legacy compatibility: if `file` provided, coerce into attachment
+        if (file && typeof file === 'object') {
+            messagePayload.type = file.type || 'file';
+            messagePayload.mediaMeta = {
+                url: file.url,
+                fileName: file.fileName,
+                fileSize: file.fileSize,
+                mimeType: file.mimeType
+            };
+        }
+
+        const message = new Message(messagePayload);
 
         // Save message
         await message.save();
@@ -134,6 +164,7 @@ exports.sendMessage = async (req, res) => {
         const io = req.app.get('io');
         io.to(chatId).emit('new_message', message);
 
+        console.log(message.content);
         res.status(201).json(message);
     } catch (error) {
         console.error('Send message error:', error);
@@ -187,13 +218,13 @@ exports.addReaction = async (req, res) => {
         }
 
         // Remove existing reaction from this user
-        message.reactions = message.reactions.filter(
-            r => r.userId.toString() !== req.user.id.toString()
+        message.reactions = (message.reactions || []).filter(
+            r => (r.user || r.userId)?.toString() !== req.user.id.toString()
         );
 
-        // Add new reaction
+        // Add new reaction (schema uses `user` field)
         message.reactions.push({
-            userId: req.user.id,
+            user: req.user.id,
             emoji
         });
 
@@ -234,7 +265,7 @@ exports.editMessage = async (req, res) => {
         }
 
         message.content = content;
-        message.edited = true;
+        message.isEdited = true;
         await message.save();
 
         // Emit edited message
@@ -264,7 +295,7 @@ exports.deleteMessage = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to delete this message' });
         }
 
-        message.deleted = true;
+        message.isDeleted = true;
         message.content = 'This message was deleted';
         await message.save();
 
@@ -479,5 +510,60 @@ exports.chatList = async (req, res) => {
     } catch(error) {
         console.error('Chat list error:', error);
         res.status(500).json({ message: 'Error fetching chat list' });
+    }
+};
+
+// @desc    Get chat messages
+// @route   GET /api/chats/:chatId/messages
+// @access  Private
+exports.getMessages = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+
+        // Find chat and ensure it exists
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found' });
+        }
+
+        // Check if user is a participant
+        const isParticipant = chat.participants.some(
+            p => p.toString() === req.user.id.toString()
+        );
+
+        if (!isParticipant) {
+            return res.status(403).json({ message: 'You are not authorized to view messages in this chat' });
+        }
+
+        // Get messages with sender info
+        const messages = await Message.find({ chatId })
+            .populate('sender', 'name avatar status')
+            .sort({ createdAt: 1 });
+
+        // Mark messages as read
+        const unreadMessages = messages.filter(
+            message => !message.readBy.includes(req.user.id)
+        );
+
+        if (unreadMessages.length > 0) {
+            await Message.updateMany(
+                { _id: { $in: unreadMessages.map(m => m._id) } },
+                { $addToSet: { readBy: req.user.id } }
+            );
+
+            // Emit read status for each message
+            const io = req.app.get('io');
+            unreadMessages.forEach(message => {
+                io.to(chatId).emit('message_read', {
+                    messageId: message._id,
+                    userId: req.user.id
+                });
+            });
+        }
+
+        res.json(messages);
+    } catch (error) {
+        console.error('Get messages error:', error);
+        res.status(500).json({ message: 'Error loading messages' });
     }
 };

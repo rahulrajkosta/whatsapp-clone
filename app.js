@@ -1,174 +1,90 @@
 const express = require('express');
+const cors = require("cors");
 const app = express();
 const path = require('path');
 const connectDB = require('./config/db');
 const User = require('./models/User');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
-const contactController = require("./controllers/contactController");
 const http = require("http");
 const { Server } = require("socket.io");
-const auth = require('./middleware/auth');
+const { ExpressPeerServer } = require('peer');
 const chatRoute = require("./routes/api/chats");
-
-const server = http.createServer(app);
-const io = new Server(server);
+const callRoutes = require('./routes/callRoutes');
+const Chat = require('./models/Chat');
+const Message = require('./models/Message');
 
 // Connect Database
 connectDB();
 
+const server = http.createServer(app);
+
+// Allowed origins
+const allowedOrigins = [
+    'https://frontend-tau-six-22.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001'
+];
+
+// CORS configuration
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Allow all for now, tighten in production
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+    exposedHeaders: ['Authorization', 'x-auth-token'],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+
+// Socket.IO with CORS
+const io = new Server(server, {
+    cors: {
+        origin: allowedOrigins,
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+});
+
+// Create PeerJS server
+const peerServer = ExpressPeerServer(server, {
+    debug: true,
+    path: '/peerjs'
+});
+
+app.use('/peerjs', peerServer);
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
 // Init Middleware
 app.use(express.json({ extended: false }));
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/login', (req, res) => {
-    res.render('login');
+// Health check
+app.get('/', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'Backend API is running',
+        timestamp: new Date().toISOString() 
+    });
 });
 
-app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        let user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
-
-        const payload = {
-            user: {
-                id: user.id
-            }
-        };
-
-        jwt.sign(
-            payload,
-            config.get('jwtSecret'),
-            { expiresIn: '1h' },
-            (err, token) => {
-                if (err) throw err;
-                res.json({ msg: 'Login successful', _id: user._id, token });
-            }
-        );
-
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.get('/signup', (req, res) => {
-    res.render('signup');
-});
+// API Routes
+app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/users', require('./routes/api/users'));
+app.use('/api/contacts', require('./routes/api/contacts'));
+app.use('/api/chats', chatRoute);
+app.use('/api/calls', callRoutes);
 
-app.post('/signup', async (req, res) => {
-    const { name, email, password } = req.body;
-
-    try {
-        let user = await User.findOne({ email });
-
-        if (user) {
-            return res.status(400).json({ msg: 'User already exists' });
-        }
-
-        user = new User({
-            name,
-            email,
-            password
-        });
-
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-
-        await user.save();
-
-        const payload = {
-            user: {
-                id: user.id
-            }
-        };
-
-        jwt.sign(
-            payload,
-            config.get('jwtSecret'),
-            { expiresIn: '1h' },
-            (err, token) => {
-                if (err) throw err;
-                res.status(200).json({ msg: 'User registered successfully', token });
-            }
-        );
-
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
-});
-
-app.get('/chat-list', (req, res) => {
-    res.render('chat-list');
-});
-
-app.get('/chat-window', (req, res) => {
-    res.render('chat-window');
-});
-
-app.get('/profile', (req, res) => {
-    res.render('profile');
-});
-
-app.get('/call-screen', (req, res) => {
-    res.render('call-screen');
-});
-
-app.get('/chat-info', (req, res) => {
-    res.render('chat-info');
-});
-
-app.get('/notifications', (req, res) => {
-    res.render('notifications');
-});
-
-app.get('/group-chat', (req, res) => {
-    res.render('group-chat');
-});
-
-app.get('/audit-log', (req, res) => {
-    res.render('audit-log');
-});
-
-app.get('/settings', (req, res) => {
-    res.render('settings');
-});
-
-app.get('/new-chat', (req, res) => {
-    res.render('new-chat');
-});
-
-app.get('/new-contact', (req, res) => {
-    res.render('new-contact');
-});
-
-// Contact Routes
-app.get('/api/contacts', auth, contactController.getContacts);
-app.post('/api/contacts', [auth, contactController.validateContact], contactController.addContact);
-app.put('/api/contacts/:id', [auth, contactController.validateContact], contactController.updateContact);
-app.delete('/api/contacts/:id', auth, contactController.deleteContact);
-app.get('/api/contacts/suggested', auth, contactController.getSuggestedContacts);
-
-// Chat Ruutes
-app.use("/api/chats", chatRoute);
-    
 // Socket.IO connection with authentication
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
@@ -180,6 +96,8 @@ io.use((socket, next) => {
     try {
         const decoded = jwt.verify(token, config.get('jwtSecret'));
         socket.userId = decoded.user.id;
+        socket.userName = decoded.user.name;
+        socket.userEmail = decoded.user.email;
         next();
     } catch (error) {
         next(new Error('Invalid token'));
@@ -188,94 +106,167 @@ io.use((socket, next) => {
 
 // Socket.io connection handler
 io.on('connection', (socket) => {
-    console.log('New client connected');
+    console.log('New client connected:', socket.userId);
 
-    // Set user as online when they connect
+    socket.join(socket.userId);
+
     if (socket.userId) {
         User.findByIdAndUpdate(socket.userId, {
             isOnline: true,
             lastSeen: new Date()
-        }).then(() => {
-            // Broadcast user's online status to all clients
-            io.emit('user_status_changed', {
+        }).then(async () => {
+            socket.broadcast.emit('user_status_changed', {
                 userId: socket.userId,
                 isOnline: true,
                 lastSeen: new Date()
             });
-        });
+
+            const chats = await Chat.find({ participants: socket.userId });
+            
+            for (const chat of chats) {
+                const unreadMessages = await Message.find({
+                    chatId: chat._id,
+                    sender: { $ne: socket.userId },
+                    readBy: { $ne: socket.userId }
+                });
+
+                if (unreadMessages.length > 0) {
+                    socket.emit('message_delivered', {
+                        chatId: chat._id,
+                        count: unreadMessages.length
+                    });
+                }
+            }
+        }).catch(err => console.error('Error updating user status:', err));
     }
 
-    // Handle joining chat
-    socket.on('join_chat', async ({ chatId, userId }) => {
+    socket.on('send_message', async (data) => {
         try {
-            // Join the chat room
-            socket.join(chatId);
-            console.log(`User ${userId} joined chat ${chatId}`);
-
-            // Emit user joined event
-            socket.to(chatId).emit('user_joined', {
-                userId,
-                timestamp: new Date()
-            });
+            const { chatId, message } = data;
+            const chat = await Chat.findById(chatId).populate('participants', 'id');
+            
+            if (chat) {
+                chat.participants.forEach(participant => {
+                    if (participant.id !== socket.userId) {
+                        socket.to(participant.id).emit('new_message', message);
+                    }
+                });
+            }
         } catch (error) {
-            console.error('Error joining chat:', error);
+            console.error('Error handling send_message:', error);
         }
     });
 
-    // Handle leaving chat
-    socket.on('leave_chat', ({ chatId, userId }) => {
-        socket.leave(chatId);
-        console.log(`User ${userId} left chat ${chatId}`);
-
-        // Emit user left event
-        socket.to(chatId).emit('user_left', {
-            userId,
-            timestamp: new Date()
+    socket.on('typing', (data) => {
+        socket.to(data.chatId).emit('typing', {
+            chatId: data.chatId,
+            userId: socket.userId
         });
     });
 
-    // Handle typing status
-    socket.on('typing', ({ chatId, userId, isTyping }) => {
-        socket.to(chatId).emit('user_typing', {
-            userId,
-            isTyping,
-            timestamp: new Date()
+    socket.on('stop_typing', (data) => {
+        socket.to(data.chatId).emit('stop_typing', {
+            chatId: data.chatId,
+            userId: socket.userId
         });
     });
 
-    // Handle disconnection
-    socket.on('disconnect', async () => {
-        console.log('Client disconnected');
-        
-        // Set user as offline when they disconnect
+    socket.on('join-call-room', (roomId) => {
+        socket.join(roomId);
+    });
+
+    socket.on('leave-call-room', (roomId) => {
+        socket.leave(roomId);
+    });
+
+    socket.on('call-signal', (data) => {
+        socket.to(data.roomId).emit('call-signal', {
+            signal: data.signal,
+            from: socket.userId
+        });
+    });
+
+    socket.on('share-peer-id', (data) => {
+        socket.to(data.callId).emit('peer-id-shared', {
+            callId: data.callId,
+            peerId: data.peerId,
+            userId: socket.userId
+        });
+    });
+
+    socket.on('initiate_call', (data) => {
+        console.log('Call initiated:', data);
+        socket.to(data.participantId).emit('incoming_call', {
+            callId: data.callId,
+            caller: {
+                id: socket.userId,
+                name: socket.userName || 'Unknown User',
+                email: socket.userEmail || ''
+            },
+            callType: data.callType
+        });
+    });
+
+    socket.on('accept_call', (data) => {
+        console.log('Call accepted:', data);
+        socket.to(data.participantId).emit('call_accepted', {
+            callId: data.callId,
+            participant: {
+                id: socket.userId,
+                name: socket.userName || 'User',
+                email: socket.userEmail || ''
+            },
+            callType: data.callType
+        });
+    });
+
+    socket.on('reject_call', (data) => {
+        console.log('Call rejected:', data);
+        socket.to(data.participantId).emit('call_rejected', {
+            callId: data.callId
+        });
+    });
+
+    socket.on('cancel_call', (data) => {
+        console.log('Call cancelled:', data);
+        socket.to(data.participantId).emit('call_cancelled', {
+            callId: data.callId
+        });
+    });
+
+    socket.on('end_call', (data) => {
+        console.log('Call ended:', data);
+        socket.to(data.participantId).emit('call_ended', {
+            callId: data.callId
+        });
+    });
+
+    socket.on('disconnect', () => {
         if (socket.userId) {
-            try {
-                await User.findByIdAndUpdate(socket.userId, {
-                    isOnline: false,
-                    lastSeen: new Date()
-                });
-
-                // Broadcast user's offline status to all clients
-                io.emit('user_status_changed', {
+            User.findByIdAndUpdate(socket.userId, {
+                isOnline: false,
+                lastSeen: new Date()
+            }).then(() => {
+                socket.broadcast.emit('user_status_changed', {
                     userId: socket.userId,
                     isOnline: false,
                     lastSeen: new Date()
                 });
-            } catch (error) {
-                console.error('Error updating user status:', error);
-            }
+            }).catch(err => console.error('Error updating user status on disconnect:', err));
         }
+        console.log('Client disconnected:', socket.userId);
     });
 });
 
-// app.get('/*', (req, res) => {
-//     res.status(404).render('404');
-// });
-
-// Store socket.io instance in app
 app.set('io', io);
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-}); 
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+// Export for Vercel
+module.exports = app;

@@ -22,7 +22,6 @@ exports.getContacts = async (req, res) => {
 
         // Get saved contacts
         const savedContacts = await Contact.find({ user: req.user.id }).sort({ name: 1 });
-        console.log(savedContacts, "saved contacts");
 
         // Get users with matching emails from saved contacts
         const savedContactEmails = savedContacts.map(contact => contact.email);
@@ -31,7 +30,6 @@ exports.getContacts = async (req, res) => {
             _id: { $ne: req.user.id }
         }).select('-password');
 
-        console.log(potentialContacts, "potential contacts");
 
         // Format the response
         const contacts = [
@@ -43,7 +41,6 @@ exports.getContacts = async (req, res) => {
             }))
         ];
 
-        console.log(contacts, "final contacts");
         res.json(contacts);
     } catch (err) {
         console.error(err.message);

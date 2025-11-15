@@ -1,0 +1,60 @@
+
+<script>
+    async function chatList() {
+        let chatList = await fetch('/api/chats/', {
+            method: "GET",
+            headers: {
+                'x-auth-token': localStorage.getItem('token')
+            }
+        });
+
+        chatList = await chatList.json();
+        let ChatListElement = document.getElementById("chatList");
+        ChatListElement.innerHTML = '';
+
+        chatList.forEach(chat => {
+            // Get other participant (not current user)
+            const otherParticipant = chat.participants.find(p => p._id !== localStorage.getItem('userId'));
+            
+            console.log(otherParticipant);
+            // Format timestamp
+            const lastMessageTime = chat.lastMessage 
+                ? new Date(chat.lastMessage.createdAt).toLocaleTimeString('en-US', { 
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true 
+                })
+                : '';
+
+            // Get last message content or default text
+            const lastMessageContent = chat.lastMessage 
+                ? chat.lastMessage.content 
+                : 'No messages yet';
+
+            // Only show unread count badge if there are unread messages
+            const unreadBadge = chat.unreadCount > 0 
+                ? `<span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">${chat.unreadCount}</span>`
+                : '';
+
+            ChatListElement.innerHTML += `
+                <a href="/chat-window?chat=${chat._id}&token=${localStorage.getItem('token')}" class="flex items-center p-4 hover:bg-gray-50">
+                    <img src="${otherParticipant?.avatar || 'https://randomuser.me/api/portraits/women/1.jpg'}" 
+                         alt="${otherParticipant?.name || 'User'}" 
+                         class="w-12 h-12 rounded-full mr-4">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-800">${otherParticipant?.name || 'Unknown User'}</h3>
+                            <span class="text-sm text-gray-500">${lastMessageTime}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm truncate">${lastMessageContent}</p>
+                    </div>
+                    ${unreadBadge}
+                </a>
+            `;
+        });
+    }
+
+    // Call chatList when page loads
+    document.addEventListener('DOMContentLoaded', chatList);
+</script>
+</html> 

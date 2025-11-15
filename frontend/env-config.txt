@@ -1,0 +1,9 @@
+Create a .env.local file in the frontend directory with the following content:
+
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_SERVER_URL=http://localhost:5000
+
+This will ensure:
+- API calls go to port 5000 (your main backend)
+- Socket.IO connections go to port 5000 (your main backend with Socket.IO)
+- PeerJS connections will use the peer-server.js on port 3001 (handled automatically)

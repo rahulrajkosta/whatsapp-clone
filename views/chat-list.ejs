@@ -6,13 +6,15 @@
     <title>Chats</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="/js/views.js"></script>
 </head>
 <body class="bg-gray-100 font-sans">
     <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden md:max-w-lg">
         <!-- Header -->
         <div class="bg-green-700 p-4 flex justify-between items-center">
             <h1 class="text-white text-2xl font-semibold">Chats</h1>
-            <a href="#" class="text-white text-2xl"><i class="fas fa-plus-square"></i></a>
+            <a href="/new-chat" class="text-white text-2xl"><i class="fas fa-plus-square"></i></a>
         </div>
 
         <!-- Search Bar -->
@@ -110,82 +112,23 @@
 
         <!-- Bottom Navigation -->
         <div class="bg-white border-t border-gray-200 p-4 flex justify-around items-center text-gray-600">
-            <a href="#" class="flex flex-col items-center text-green-700">
+            <a href="/chat-list" class="flex flex-col items-center text-green-700">
                 <i class="fas fa-comment-dots text-xl"></i>
                 <span class="text-xs">Chats</span>
             </a>
-            <a href="#" class="flex flex-col items-center">
+            <a href="/calls" class="flex flex-col items-center">
                 <i class="fas fa-phone-alt text-xl"></i>
                 <span class="text-xs">Calls</span>
             </a>
-            <a href="#" class="flex flex-col items-center">
+            <a href="/profile" class="flex flex-col items-center">
                 <i class="fas fa-user-circle text-xl"></i>
                 <span class="text-xs">Profile</span>
             </a>
-            <a href="#" class="flex flex-col items-center">
+            <a href="/settings" class="flex flex-col items-center">
                 <i class="fas fa-cog text-xl"></i>
                 <span class="text-xs">Settings</span>
             </a>
         </div>
     </div>
 </body>
-
-<script>
-    async function chatList() {
-        let chatList = await fetch('/api/chats/', {
-            method: "GET",
-            headers: {
-                'x-auth-token': localStorage.getItem('token')
-            }
-        });
-
-        chatList = await chatList.json();
-        let ChatListElement = document.getElementById("chatList");
-        ChatListElement.innerHTML = '';
-
-        chatList.forEach(chat => {
-            // Get other participant (not current user)
-            const otherParticipant = chat.participants.find(p => p._id !== localStorage.getItem('userId'));
-            
-            console.log(otherParticipant);
-            // Format timestamp
-            const lastMessageTime = chat.lastMessage 
-                ? new Date(chat.lastMessage.createdAt).toLocaleTimeString('en-US', { 
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true 
-                })
-                : '';
-
-            // Get last message content or default text
-            const lastMessageContent = chat.lastMessage 
-                ? chat.lastMessage.content 
-                : 'No messages yet';
-
-            // Only show unread count badge if there are unread messages
-            const unreadBadge = chat.unreadCount > 0 
-                ? `<span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">${chat.unreadCount}</span>`
-                : '';
-
-            ChatListElement.innerHTML += `
-                <a href="/chat-window?chat=${chat._id}" class="flex items-center p-4 hover:bg-gray-50">
-                    <img src="${otherParticipant?.avatar || 'https://randomuser.me/api/portraits/women/1.jpg'}" 
-                         alt="${otherParticipant?.name || 'User'}" 
-                         class="w-12 h-12 rounded-full mr-4">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-800">${otherParticipant?.name || 'Unknown User'}</h3>
-                            <span class="text-sm text-gray-500">${lastMessageTime}</span>
-                        </div>
-                        <p class="text-gray-600 text-sm truncate">${lastMessageContent}</p>
-                    </div>
-                    ${unreadBadge}
-                </a>
-            `;
-        });
-    }
-
-    // Call chatList when page loads
-    document.addEventListener('DOMContentLoaded', chatList);
-</script>
 </html> 
